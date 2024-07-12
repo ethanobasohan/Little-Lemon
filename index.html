@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Little Lemon Restaurant</title>
+    <link rel="stylesheet" href="styles.css">
+    <script>
+        async function fetchAPI(url, options = {}) {
+            const response = await fetch(url, options);
+            return response.json();
+        }
+
+        async function updateReservations() {
+            const customerName = document.getElementById('customerName').value;
+            const reservationTime = document.getElementById('reservationTime').value;
+
+            if (customerName && reservationTime) {
+                const reservation = { customer_name: customerName, reservation_time: reservationTime };
+                await fetchAPI('/reservations/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(reservation)
+                });
+                alert('Reservation added successfully!');
+                displayReservations(); // Update display after updating reservations
+            } else {
+                alert('Please enter both customer name and reservation time.');
+            }
+        }
+
+        async function displayReservations() {
+            const reservations = await fetchAPI('/reservations/');
+            const displayDiv = document.getElementById('display');
+            displayDiv.innerHTML = ''; // Clear previous content
+
+            reservations.forEach(reservation => {
+                const reservationInfo = document.createElement('p');
+                reservationInfo.textContent = `Customer: ${reservation.customer_name}, Time: ${reservation.reservation_time}`;
+                displayDiv.appendChild(reservationInfo);
+            });
+        }
+
+        async function populateInventoryList() {
+            const inventoryItems = await fetchAPI('/inventory/');
+            const inventoryList = document.getElementById('inventoryList');
+            inventoryList.innerHTML = '';
+            inventoryItems.forEach(item => {
+                const li = document.createElement('li');
+                li.textContent = `${item.name}: ${item.quantity}`;
+                inventoryList.appendChild(li);
+            });
+        }
+
+        async function populateMenuAndForm() {
+            const menuItems = await fetchAPI('/menu/');
+            const menuList = document.getElementById('menuList');
+            const menuItemSelect = document.getElementById('menuItem');
+            menuList.innerHTML = '';
+            menuItemSelect.innerHTML = '';
+
+            menuItems.forEach(item => {
+                const li = document.createElement('li');
+                li.textContent = `${item.name}: $${item.price.toFixed(2)}`;
+                menuList.appendChild(li);
+
+                const option = document.createElement('option');
+                option.value = item.id;
+                option.textContent = item.name;
+                menuItemSelect.appendChild(option);
+            });
+        }
+
+        document.getElementById('priceUpdateForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            
+            const menuItemId = parseInt(document.getElementById('menuItem').value);
+            const newPrice = parseFloat(document.getElementById('newPrice').value);
+
+            await fetchAPI(`/menu/${menuItemId}/`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ price: newPrice })
+            });
+            alert('Price updated successfully!');
+            populateMenuAndForm(); // Refresh menu list and form
+        });
+
+        window.onload = function() {
+            displayReservations(); // Display reservations on page load
+            populateInventoryList(); // Initial population of inventory
+            populateMenuAndForm(); // Initial population of menu and form
+        };
+    </script>
+</head>
+<body>
+    <header>
+        <h1>Little Lemon Restaurant</h1>
+        <h2>Inventory & Price Management</h2>
+    </header>
+
+    <main>
+        <section id="reservations">
+            <h3>Reservations</h3>
+            <form onsubmit="event.preventDefault(); updateReservations();">
+                <label for="customerName">Customer Name:</label>
+                <input type="text" id="customerName" name="customerName" required>
+                <br>
+                <label for="reservationTime">Reservation Time:</label>
+                <input type="time" id="reservationTime" name="reservationTime" required>
+                <br>
+                <button type="submit">Add Reservation</button>
+            </form>
+            <h4>Current Reservations</h4>
+            <div id="display"></div>
+        </section>
+
+        <section id="inventory">
+            <h3>Current Inventory</h3>
+            <ul id="inventoryList">
+                <!-- Inventory items will be dynamically added here -->
+            </ul>
+        </section>
+
+        <section id="menu">
+            <h3>Menu Item Prices</h3>
+            <ul id="menuList">
+               
+            </ul>
+        </section>
+
+        <section id="updateForm">
+            <h3>Update Menu Item Price</h3>
+            <form id="priceUpdateForm">
+                <label for="menuItem">Select Menu Item:</label>
+                <select id="menuItem" name="menuItem">
+                   
+                </select>
+                <label for="newPrice">New Price:</label>
+                <input type="number" id="newPrice" name="newPrice" step="0.01" required>
+                <button type="submit">Update Price</button>
+            </form>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 Little Lemon Restaurant. All rights reserved.</p>
+    </footer>
+</body>
+</html>
